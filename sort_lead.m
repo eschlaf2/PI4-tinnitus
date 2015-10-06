@@ -29,7 +29,7 @@ switch nargin
             angle_adjust = phases(permutation == find(strcmp([ROIS(:,1)], baseroi)));
         catch ME
             warning('baseroi not found. Input ignored.')
-            [phases, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
+            [eig_vec, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
             return
         end
     case 2

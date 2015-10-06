@@ -134,7 +134,7 @@ for L = period_length
                 end
                 [eig_phases, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
                     sort_lead(lead_matrix, ROIS, base_roi);
-
+size(eig_phases)
                 eig_cycles(count,eig_perm(count,:)) = eig_phases(:,1);
                 mm = zeros(size(data,1));
                 for k = 1:size(data,1)
