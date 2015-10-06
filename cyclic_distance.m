@@ -1,31 +1,36 @@
 function [dist] = cyclic_distance(V1, V2)
-% Takes permutations of the same length and measures the distance between 
-% them in terms of how far the elements are - add .5 for each place different. 
+% Takes orderings of the same length and measures the distance between 
+% them in terms of how apart they are - add .5 for each place different. 
 % For example, [1 2 3 4] and [1 3 2 4] have a distance of 1; [1 2 3 4] and 
-% [1 4 3 2] have a distance of 2. Note that the algorithm cycles through
-% each ordering to find the minimum distance between permutations and
-% returns that distance.
+% [1 4 3 2] have a distance of 2. 
 
-if numel(V1)~=numel(V2)
-    display(numel(V1),'V1'); display(numel(V2),'V2');
-    warning('Inputs should be cycles with the same number of elements');
-    return
-end
-
-V1 = reshape(V1,1,[]); V2 = reshape(V2,1,[]);
-
-N = numel(V1);
-
-for i = 0:numel(V1) - 1
-    V2 = circshift(V2, [0, i]);
-    dist = 0;
-    for v = V2
-        d = abs(find(V2 == v) - find(V1 == v));
-        d = min([d, N - d]);
-        dist = dist + d/2;
+try
+    [V1(:), V2];
+catch
+    try
+        [V1(:), V2.']; V2 = V2.';
+    catch
+        display([numel(V1), numel(V2)],'V1, V2');
+        warning('Inputs should be cycles with the same number of elements');
+        return
     end
-    if i == 0; min_dist = dist; continue; end
-    if dist < min_dist; min_dist = dist; end
 end
 
-dist = min_dist;
+[r, c] = size(V2);
+
+[~, ss] = sort([V1(:), V2]);
+dist = sum(abs(ss(:,2:end) - repmat(ss(:,1), 1, size(ss, 2) - 1)))/2;
+
+%%%
+if 0 == 1 % cyclic_distance retired 7/1/15
+
+    distances = zeros(r,c);
+    for i = 1:r
+        [~, ss] = sort([circshift(V1(:), i), V2]);
+    %     dd = min(abs(diff(ss, 1, 2)),N - abs(diff(ss, 1, 2)));
+    %     distances(i) = pdist(dd,'chebychev');
+    %     distances(i,:) = sum(min(abs(diff(ss, 1, 2)), r - abs(diff(ss, 1, 2))));
+        distances(i,:) = sum(abs(diff(ss, 1, 2)));
+    end
+    dist = min(distances)/2;
+end

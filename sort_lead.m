@@ -1,15 +1,45 @@
-function [phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a)
+function [phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
+% The first input should be the matrix to be sorted, the second should be
+% the title of an ROI to be used as a baseline.
+% On July 2 I changed the output so that phases outputs an angle rather
+% than the associated complex number and the lowest phase is always zero.
+% On July 14 I changed the output so that a chosen ROI can be used as a
+% baseline.
 
-	 [N,~]=size(a);
-	 [u,spectrum]=eig(a);
+
+   	 [u,spectrum]=eig(a);
      spectrum = diag(spectrum);
-	 [~,permutation]=sort(mod(angle(u(:,1).'),2*pi));
-	 permutation=circshift(permutation,[0,N+1-find(permutation==1)]);
-% 				#pm=eye(N)(:,in);
-	 p1=fliplr(permutation);
-     if sum(abs(p1-(1:N)))<sum(abs(permutation-(1:N)))
-         permutation=p1;
+     sorted_ang = sort(mod(angle(u(:,1)),2*pi));
+     [~, shift] = max(abs(diff([sorted_ang; sorted_ang(1) + 2*pi])));
+     if shift == numel(u(:,1))
+         shift = 1; 
+     else
+         shift = shift + 1;
      end
-	 phases=u(permutation,1)';
+     shift = sorted_ang(shift);
+%      shift = pi - median(mod(angle(u(:,1).'), 2*pi));
+	 [phases,permutation]=sort(mod(mod(angle(u(:,1).'), 2*pi) - shift, 2*pi));
+          
+%      Phase adjust
+switch nargin
+    case 3
+        ROIS = varargin{1};
+        baseroi = varargin(2);
+        try
+            angle_adjust = phases(permutation == find(strcmp([ROIS(:,1)], baseroi)));
+        catch ME
+            warning('baseroi not found. Input ignored.')
+            [phases, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
+            return
+        end
+    case 2
+        error('Optional arg 1 should be the ROIS; optional arg 2 should be base roi')
+    case 1
+        angle_adjust = min(phases);
+    otherwise
+        error('Too many arguments')
+end
+
+     phases = phases - ones(size(phases)) .* angle_adjust;
 	 sorted_lead_matrix=a(permutation,permutation);
 end

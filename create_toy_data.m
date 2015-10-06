@@ -20,8 +20,8 @@ if not(sum(strncmp(type,not_sine_data,4)))
 % Sine functions
     toy_data=sin(ang_mesh + time_mesh) + noise_magnitude*randn(rois,time);
     % ss shows the permutation that we should get from the analysis
-    [~,ss] = sort(ang, 'descend'); ss = keep_one_first(ss); 
-    if display_; display(ss); end
+    [~,ss] = sort(ang, 'descend'); %ss = keep_one_first(ss); 
+    if display_; display(ss,'permutation'); display(ang(ss),'ang'); end
 end
 
 if strcmp(type, 'altered_sines')
@@ -48,27 +48,30 @@ end
 
 if strcmp(type, 'gaussian')
 % Gaussian functions
-    toy_data=exp(-(time_mesh-5*ang_mesh).^2) + noise_magnitude*randn(rois,time);
+    m = rand(rois,1) + time/2 .* ones(rois,1);
+    x = meshgrid((1:time),(1:rois));
+    toy_data = zeros(size(x));
+    for i = 1:rois
+        toy_data(i,:) = normpdf(x(i,:), m(i), 1);
+    end
+    toy_data = toy_data + noise_magnitude * randn(size(x));
     % ss shows the permutation that we should get from the analysis
-    [~,ss] = sort(ang); ss = keep_one_first(ss); 
-    if display_; display(ss); end
+    [~,ss] = sort(m); %ss = keep_one_first(ss); 
+    if display_; display(ss,'perm'); end
 end
 
 if strcmp(type, 'data')
 % alter one line of data from an actual roi
     roi_line;
-    lines = meshgrid(data_line, (1:rois));
-    horiz_shift = [zeros(rois,1),randi(length(data_line), rois, 1)];
-    [~, vert_shift] = meshgrid((1:length(data_line)), 50 .* randi(6,1,rois));
-    stretch = meshgrid(3 * rand(rois, 1) + .5,(1:length(data_line))).';
-    lines = stretch .* lines - vert_shift;
-    for i = 1:rois
-        lines(i,:) = circshift(lines(i,:),horiz_shift(i,:));
-    end
+    p = fit(time/numel(data_line1) .* (1:numel(data_line1)).', ...
+        reshape(smooth(data_line1), [], 1), 'cubicspline');
+    m = 2.*rand(rois, 1);
+    x = meshgrid((1:time), (1:rois)) + meshgrid(m, (1:time)).';
+    lines = reshape(p(x), size(x));
+    lines = power(lines, meshgrid(rand(rois,1) + ones(rois,1), (1:time)).');
     toy_data = lines + noise_magnitude * randn(size(lines));
-    [~, ss] = sort(horiz_shift(:,2)); ss = keep_one_first(ss); 
+    [~, ss] = sort(m, 'descend'); % ss = keep_one_first(ss); 
     if display_; display(ss); end
-    
     
 end
 
