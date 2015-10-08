@@ -1,4 +1,4 @@
-function cyclic_analysis_plots(eig_phases, eig_perm, sorted_lead_matrix, eig_vals)
+function cyclic_analysis_plots(eig_vec, ~, sorted_lead_matrix, eig_vals)
 
 
 %% Plots
@@ -53,7 +53,7 @@ set(gca, 'ytick', [], 'xtick', []);
 axis('square')
 
 tight_subplot(r,c,Map_plotOrder('eigenvectors'));
-plot(eig_phases(:,1),'b*-');
+plot(squeeze(eig_vec(:,:,1)),'b*-');
 hold on; plot(0,0,'r*');
 set(gca, 'ytick', [], 'xtick', []);
 axis([-.5, .5, -.5, .5]); axis('square');
@@ -64,7 +64,7 @@ set(gca, 'ytick', [], 'xtick', []);
 axis('square')
 
 tight_subplot(r,c,Map_plotOrder('eigenvector_magnitude'));
-stem(abs(eig_phases(:,1)))
+stem(abs(squeeze(eig_vec(:,:,1))))
 set(gca, 'ytick', [], 'xtick', []);
 axis('square')
 

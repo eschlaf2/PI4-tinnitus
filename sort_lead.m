@@ -1,4 +1,4 @@
-function [eig_vec, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
+function [eig_vec, phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
 % The first input should be the matrix to be sorted, the second should be
 % the title of an ROI to be used as a baseline.
 % On July 2 I changed the output so that phases outputs an angle rather
