@@ -10,10 +10,11 @@ colorset = [lines(7);cool(2)];
 bilat_avg = {};
 % {'parahippocampus', 'auditory cortex', 'frontal lobe'};
 base_roi = 'l parahip';
-groups = [1 2];
+groups = [1];
 bin_starts = 'divided'; %(1:60:200); %Music starts at 25; can also put 'divided' or 'rand'
-period_length = [30 60 120]; %[30 60 120]; 
+period_length = [120]; %[30 60 120]; 
 plot_ts = 'n'; %'y' or 'n'%
+subject_set = 'Music';
 data_set = 'Resting';
 
 %% Data sets
@@ -51,7 +52,8 @@ for L = period_length
         expected_rois = 9;  % check
 
         count = 0;
-        for i = Subj_Groups{group,2}
+	subjects = Subj_Groups(subject_set);
+        for i = subjects{group,2}
             file_name = strcat('processed_subject_',num2str(i, '%02.0f'),'.mat');
             try
                 data_whole = integration_filter(importdata(file_name));  
@@ -69,7 +71,7 @@ for L = period_length
                     figure(30 + group)
                     if count == 0; fullscreen(gcf); end
                     set(gcf,'DefaultAxesColorOrder',colorset)
-                    subplot(3, 3, find(Subj_Groups{group,2} == i))
+                    subplot(3, 3, find(subjects{group,2} == i))
                     treated = alt_norm(integration_filter(data_whole));
                     plot(treated.');
                     set(gca, 'ytick', []);
@@ -79,7 +81,7 @@ for L = period_length
                     xlabel(num2str(ratio.', '  %6.2g  '));
                     axis('tight')
                     annotation('textbox', [.25, .99, .5, 0.01], ...
-                    'string', {Subj_Groups{group}}, ...
+                    'string', {subjects{group}}, ...
                     'linestyle', 'none', ...
                     'fontsize', 18, 'fontweight', 'bold',...
                     'horizontalalignment','center', ...
@@ -124,12 +126,12 @@ for L = period_length
                 lead_matrix = create_lead(normed_data); 
                 if count == 1
                     if group == 1
-                        spectrum = zeros(size(groups,2), numel(Subj_Groups{group, 2})*bins,...
+                        eig_vals = zeros(size(groups,2), numel(subjects{group, 2})*bins,...
                             numel(ROIS(:, 1)));
                     end
-                    eig_cycles = zeros(numel(Subj_Groups{group,2}) * bins, numel(ROIS(:,1)));
+                    eig_cycles = zeros(numel(subjects{group,2}) * bins, numel(ROIS(:,1)));
                     eig_perm = eig_cycles;
-%                     spectrum(group,count,:) = eig_cycles;
+%                     eig_vals(group,count,:) = eig_cycles;
                     mtx = zeros(size(data,1)); 
                 end
                 [eig_phases, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
@@ -194,7 +196,7 @@ for L = period_length
 %         plot(cos(t), sin(t),'k'); 
 %         axis([-1.2, 1.2, -1.2, 1.2]);
 %         axis('square');
-%         title({Subj_Groups{group};strcat('Period length = ',num2str(L))})
+%         title({subjects{group};strcat('Period length = ',num2str(L))})
 %         % legend(ROIS(sm),'Location','northwest'); 
 %         if subplotNo == 1
 %             bin_txt('Bubbles');
@@ -236,7 +238,7 @@ for L = period_length
         imagesc(angle_mtx, angle_range);
         set(gca, 'Xtick', (1:size(ROIS,1)));
         xlabel('Ahead'); ylabel('Behind')
-        title({Subj_Groups{group};strcat('Period length = ',num2str(L));...
+        title({subjects{group};strcat('Period length = ',num2str(L));...
             strcat('n=',num2str(count))})
         colorbar('Ytick', (angle_range(1):pi/8:angle_range(2)),...
             'Yticklabel', {'-pi/4'; '-pi/8'; '0'; 'pi/8'; 'pi/4'});
@@ -260,7 +262,7 @@ for L = period_length
 %         pp = get(gca, 'position'); 
 %         txt(pos(pp));
 %         ylim([0 7])
-%         title({Subj_Groups{group};strcat('Period length = ',num2str(L))})
+%         title({subjects{group};strcat('Period length = ',num2str(L))})
 %         xlabel('Region'); ylabel('Proportion of time showing up after')
 %         if subplotNo == 1
 %             legend_label = ROIS(:,1); 
@@ -281,7 +283,7 @@ for L = period_length
         colormap(var_colors);
 %         pp = get(gca, 'position'); 
 %         txt(pos(pp));
-        title({Subj_Groups{group};strcat('Period length = ',num2str(L));...
+        title({subjects{group};strcat('Period length = ',num2str(L));...
             strcat('n=',num2str(count))})
         xlabel('Before'); ylabel('After')
         colorbar;   
