@@ -65,7 +65,7 @@ for L = period_length
             %% time series plots
             if L == period_length(1)
                 if plot_ts == 'y'
-                    [~, ~, ~, total_spect] = ...
+                    [~, ~, ~, ~, total_spect] = ...
                         sort_lead(create_lead(alt_norm(integration_filter(data_whole)))...
                         , ROIS, base_roi);
                     figure(30 + group)
@@ -128,13 +128,19 @@ for L = period_length
                     if group == 1
                         eig_vals = zeros(size(groups,2), numel(subjects{group, 2})*bins,...
                             numel(ROIS(:, 1)));
+                        eig_vec = eig_vals;
                     end
                     eig_cycles = zeros(numel(subjects{group,2}) * bins, numel(ROIS(:,1)));
                     eig_perm = eig_cycles;
 %                     eig_vals(group,count,:) = eig_cycles;
                     mtx = zeros(size(data,1)); 
                 end
+<<<<<<< HEAD
                 [eig_vec, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
+=======
+                [eig_vec(group,count,:), eig_phases, eig_perm(count,:), sorted_lead_matrix, ...
+                    eig_vals(group,count,:)] = ...
+>>>>>>> 042b3c75cbb4286d5a2eafc5bab5cc92769ae169
                     sort_lead(lead_matrix, ROIS, base_roi);
 
                 eig_cycles(count,eig_perm(count,:)) = eig_vec(:,1);
@@ -228,7 +234,7 @@ for L = period_length
 %         end
         
         %% angle matrices
-        [rows, cols] = meshgrid(mean_cycles);
+        [rows, cols] = meshgrid(angle(mean_cycles));
         angle_mtx = cols - rows;
         figure(41)
         set(gcf, 'DefaultAxesPosition', [.15 .05 .86 .9]);
