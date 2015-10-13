@@ -18,7 +18,7 @@ subject_set = 'Music';
 data_set = 'Resting';
 
 %% Data sets
-data_location = {'Resting', '/home/eschlaf2/PI4/Resting matrices of music subjects'; ...
+data_location = {'Resting', '/home/eschlaf2/PI4/Resting_matrices_of_music_subjects'; ...
     'Music intervals', '/Users/emilyschlafly/Box Sync/PI4/Raw Data/Music/fitness study'};
 data_set = validatestring(data_set, data_location(:,1));
 %%
@@ -134,10 +134,10 @@ for L = period_length
 %                     eig_vals(group,count,:) = eig_cycles;
                     mtx = zeros(size(data,1)); 
                 end
-                [eig_phases, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
+                [eig_vec, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
                     sort_lead(lead_matrix, ROIS, base_roi);
 
-                eig_cycles(count,eig_perm(count,:)) = eig_phases(:,1);
+                eig_cycles(count,eig_perm(count,:)) = eig_vec(:,1);
                 mm = zeros(size(data,1));
                 for k = 1:size(data,1)
                     p = eig_perm(count,:);
