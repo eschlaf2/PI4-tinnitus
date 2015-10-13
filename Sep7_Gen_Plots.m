@@ -135,13 +135,13 @@ for L = period_length
 %                     eig_vals(group,count,:) = eig_cycles;
                     mtx = zeros(size(data,1)); 
                 end
-<<<<<<< HEAD
-                [eig_vec, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
-=======
+%                 [eig_vec, eig_perm(count,:), sorted_lead_matrix, spectrum(group,count,:)] = ...
+% =======
                 [eig_vec(group,count,:), eig_phases, eig_perm(count,:), sorted_lead_matrix, ...
                     eig_vals(group,count,:)] = ...
->>>>>>> 042b3c75cbb4286d5a2eafc5bab5cc92769ae169
                     sort_lead(lead_matrix, ROIS, base_roi);
+                % % >>>>>>> 042b3c75cbb4286d5a2eafc5bab5cc92769ae169
+
 
                 eig_cycles(count,eig_perm(count,:)) = eig_vec(:,1);
                 mm = zeros(size(data,1));
