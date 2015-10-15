@@ -21,7 +21,7 @@ data_location = {'Resting', '/home/eschlaf2/PI4/Resting_matrices_of_music_subjec
     'Music intervals', '/Users/emilyschlafly/Box Sync/PI4/Raw Data/Music/fitness study'};
 data_set = validatestring(data_set, data_location(:,1));
 %%
-% for L = period_length
+% for period_length = period_length
     %% point size parameters
     min_ps = 2; max_ps = 40;
     min_std = 1; max_std = 2.5;
@@ -64,19 +64,19 @@ data_set = validatestring(data_set, data_location(:,1));
         %% binning
         if ischar(bin_starts)
             if strcmpi(bin_starts,'rand')
-                starts = randi(length(data_whole) - L, ...
-                    1, round(length(data_whole) / L));
+                starts = randi(length(data_whole) - period_length, ...
+                    1, round(length(data_whole) / period_length));
             elseif strcmpi(bin_starts, 'divided')
-                starts = (1:L:length(data_whole) - L);
+                starts = (1:period_length:length(data_whole) - period_length);
             else
                 warning(['Variable ''bin_starts'' can be ',...
                     '''rand'' or ''divided''. Assumed ''divided''.']);
                 bin_starts = 'divided';
-                starts = (1:L:length(data_whole) - L);
+                starts = (1:period_length:length(data_whole) - period_length);
             end
 
         elseif isnumeric(bin_starts)
-            starts = bin_starts(bin_starts + L <= length(data_whole));
+            starts = bin_starts(bin_starts + period_length <= length(data_whole));
         else 
             error('The variable ''bin_starts'' must be character or numeric type');
         end
@@ -85,7 +85,7 @@ data_set = validatestring(data_set, data_location(:,1));
         %% analysis
         for n = 1:bins
             count = count + 1;
-            data = data_whole(:, starts(n): starts(n) + L);
+            data = data_whole(:, starts(n): starts(n) + period_length);
 
             %bilateral averages
             if exist('r', 'var')
@@ -105,14 +105,14 @@ data_set = validatestring(data_set, data_location(:,1));
                 eig_perm = eig_vals;
                 eig_phases = eig_vals;
                 sorted_lead_matrix = zeros(numel(subjects{group, 2})*bins,...
-                    size(ROIS,1), size(ROIS,1));
+                    numel(ROIS(:,1)), numel(ROIS(:,1)));
 %                 eig_cycles = zeros(numel(subjects{group,2}) * bins, numel(ROIS(:,1)));
 %                 eig_perm = eig_cycles;
 %                 mtx = zeros(size(data,1)); 
             end
             [eig_vec(count,:), eig_phases(count,:), eig_perm(count,:), ...
                 sorted_lead_matrix(count,:,:), ...
-                eig_vals(group,count,:)] = ...
+                eig_vals(count,:)] = ...
                 sort_lead(lead_matrix, ROIS, base_roi);
 
 
@@ -131,5 +131,5 @@ data_set = validatestring(data_set, data_location(:,1));
 %     mtx = mtx ./ count;
 
     % Kill zero rows
-    eig_cycles = eig_cycles(1:count,:);
+   % eig_cycles = eig_cycles(1:count,:);
 % end

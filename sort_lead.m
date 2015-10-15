@@ -39,5 +39,5 @@ end
 
      phases = phases - ones(size(phases)) .* angle_adjust;
 	 sorted_lead_matrix=a(permutation,permutation);
-     eig_vec = eig_vec(permutation,:);
+     eig_vec = eig_vec(permutation,1);
 end
