@@ -1,10 +1,8 @@
 function [eig_vec, phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
-% The first input should be the matrix to be sorted, the second should be
-% the title of an ROI to be used as a baseline.
-% On July 2 I changed the output so that phases outputs an angle rather
-% than the associated complex number and the lowest phase is always zero.
-% On July 14 I changed the output so that a chosen ROI can be used as a
-% baseline.
+% sorts the given lead matrix. Takes optional arguments: 1) a list of ROIS
+% if different from existing 'ROIS' variable (used when we looked at
+% average of left and right regions); 2) base roi - a region to be used as
+% the base.
 
 
    	 [eig_vec,spectrum]=eig(a);
@@ -17,7 +15,6 @@ function [eig_vec, phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(
          shift = shift + 1;
      end
      shift = sorted_ang(shift);
-%      shift = pi - median(mod(angle(u(:,1).'), 2*pi));
 	 [phases,permutation]=sort(mod(mod(angle(eig_vec(:,1).'), 2*pi) - shift, 2*pi));
           
 %      Phase adjust
@@ -42,5 +39,5 @@ end
 
      phases = phases - ones(size(phases)) .* angle_adjust;
 	 sorted_lead_matrix=a(permutation,permutation);
-     %eig_vec = eig_vec(permutation,:);
+     eig_vec = eig_vec(permutation,:);
 end
