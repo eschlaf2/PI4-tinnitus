@@ -1,4 +1,4 @@
-cd('/Users/emilyschlafly/Box Sync/PI4/Raw Data/Data (matrices)/Resting matrices of music subjects'); 
+cd('/home/eschlaf2/PI4/Resting_matrices_of_music_subjects'); 
 files = dir('subject*.mat');
 regions_of_interest;
 
