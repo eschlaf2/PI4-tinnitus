@@ -3,7 +3,7 @@ function Process_ROIS(radius)
 % be labeled as 'subject*.mat' and results will be saved as
 % 'processed_subject*.mat'. Returns mean value of points within specified
 % radius of ROIS indicated in regions_of_interest file.
-% inputs: radius (optional, default = 5)
+% inputs: radius (optional) default = 5
 
 
 files = dir('subject*.mat');
