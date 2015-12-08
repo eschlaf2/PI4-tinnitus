@@ -85,7 +85,8 @@ switch nargin
         error('Too many arguments')
 end
 
-     phases = phases - ones(size(phases)) .* angle_adjust;
+%      phases = phases - ones(size(phases)) .* angle_adjust;
 	 sorted_lead_matrix=a(permutation,permutation);
-     eig_vect = eig_vect(permutation,:);
+     eig_vect = eig_vect(:,1);
+%      eig_vect = eig_vect(permutation,:);
 end
