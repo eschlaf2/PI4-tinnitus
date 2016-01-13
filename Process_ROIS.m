@@ -6,7 +6,7 @@ function Process_ROIS(radius)
 % inputs: radius (optional, default = 5)
 
 
-files = dir('subject*.mat');
+files = dir('*.mat');
 regions_of_interest;
 
 if nargin==0
@@ -28,5 +28,6 @@ for file = files.'
         sub_rois(i,:) = average_regions(ROIS{i, 2},data,radius);
     end
     save(filename,'sub_rois')
+    clear data sub_rois;
 end
 
