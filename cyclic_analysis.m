@@ -1,11 +1,24 @@
-function [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = cyclic_analysis(data_file);
+function [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
+    cyclic_analysis(data_file, norm_method)
+% Performs cyclic analysis on data_file using normalization norm_method,
+% one of 'z-score' or 'frobenius' (default 'z-score').
+
+norm_methods = {'z-score', 'frobenius'};
+switch nargin
+    case 1
+        norm_method = 'z-score';
+    case 2
+        validatestring(norm_method, norm_methods);
+    otherwise
+        error('Wrong number of arguments');
+end
+
 data = importdata(data_file);
 data = integration_filter(data);
-normed_data = alt_norm(data);
+normed_data = z_score_norm(data);
 lead_matrix = create_lead(normed_data);
 [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
     sort_lead(lead_matrix);
-
 
 end
 
@@ -16,14 +29,40 @@ function [y] = integration_filter(x)
     end
 end
 
-function [normed_Z] = alt_norm(Z)
+function [normed_Z] = frob_norm(Z)
+% Normalize vector(s) Z so that the quadratic variation is equal to 1. See
+% Frobenius norm
 
-    [~, time_steps] = size(Z);
-    t = (1:time_steps)/time_steps;
-    Z=Z-(Z(:,time_steps)-Z(:,1))*t;
-    Z = Z - repmat(mean(Z, 2), 1, time_steps);
+% time_dim = size(Z,2);
+z_adjusted = match_ends(Z);
+z_diff = (z_adjusted-circshift(z_adjusted,1,2));
+normf = sqrt(diag(z_diff*z_diff'));
+normed_Z = (z_adjusted'/(diag(normf)))';
+normed_Z = mean_center(normed_Z);
 
+end 
+
+function [normed_Z] = z_score_norm(Z)
+% Normalize vector(s) Z using Z-score-scaling - ?=0, ?=1.
+
+    time_steps = size(Z,2);
+    Z = match_ends(Z);
+%     t = linspace(0,1,time_steps);
+%     Z=Z-(Z(:,time_steps)-Z(:,1))*t;
+    Z = mean_center(Z);
     normed_Z = repmat(var(Z, [], 2).^(-1/2), 1, time_steps) .* Z;
+end
+
+function matched_Z = match_ends(Z)
+% Linearly adjusts a matrix (set of vectors) Z so that the end points match
+% the starting points - Z(:,1) == Z(:,end)
+n = size(Z,2);
+matched_Z = Z - (Z(:,n) - Z(:,1)) * linspace(0,1,n);
+end
+
+function centered_Z = mean_center(Z)
+% Shifts vector(s) Z so that mean == 0.
+centered_Z = Z - repmat(mean(Z, 2), 1, size(Z, 2));
 end
 
 function [lead_matrix] = create_lead(normed_Z)
