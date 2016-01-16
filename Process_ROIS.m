@@ -6,7 +6,7 @@ function Process_ROIS(radius)
 % inputs: radius (optional, default = 5)
 
 
-files = dir('*.mat');
+files = dir('subject*.mat');
 regions_of_interest;
 
 if nargin==0
