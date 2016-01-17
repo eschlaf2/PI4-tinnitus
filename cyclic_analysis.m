@@ -15,7 +15,13 @@ end
 
 data = importdata(data_file);
 data = integration_filter(data);
-normed_data = z_score_norm(data);
+
+if strcmp(norm_method,'z-score')
+    normed_data = z_score_norm(data);
+else
+    normed_data = frob_norm(data);
+end
+
 lead_matrix = create_lead(normed_data);
 [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
     sort_lead(lead_matrix);
