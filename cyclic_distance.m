@@ -5,24 +5,18 @@ function [dist] = cyclic_distance(V1, V2)
 % [1 4 3 2] have a distance of 2. 
 
 try
-    [V1(:), V2];
+    [~, ss] = sort([V1(:), V2(:)]);
+    dist = sum(abs(diff(ss,1,2)))/2;
+%     dist = sum(abs(ss(:,2:end) - repmat(ss(:,1), 1, size(ss, 2) - 1)))/2;
 catch
-    try
-        [V1(:), V2.']; V2 = V2.';
-    catch
-        display([numel(V1), numel(V2)],'V1, V2');
-        warning('Inputs should be cycles with the same number of elements');
-        return
-    end
+    display([numel(V1), numel(V2)],'V1, V2');
+    warning('Inputs should be cycles with the same number of elements');
+    return
 end
-
-[r, c] = size(V2);
-
-[~, ss] = sort([V1(:), V2]);
-dist = sum(abs(ss(:,2:end) - repmat(ss(:,1), 1, size(ss, 2) - 1)))/2;
 
 %%%
 if 0 == 1 % cyclic_distance retired 7/1/15
+    [r, c] = size(V2);
 
     distances = zeros(r,c);
     for i = 1:r

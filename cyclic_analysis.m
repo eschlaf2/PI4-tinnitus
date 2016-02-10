@@ -1,30 +1,47 @@
 function [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
-    cyclic_analysis(data_file, norm_method)
+    cyclic_analysis(data_file, norm_method, p)
 % Performs cyclic analysis on data_file using normalization norm_method,
-% one of 'z-score' or 'frobenius' (default 'z-score').
+% one of 'z-score' or 'quad' (default 'quad') on eigenvector p (default
+% 1).
 
-norm_methods = {'z-score', 'frobenius'};
+% parse input
+norm_methods = {'z-score', 'quad'};
 switch nargin
     case 1
-        norm_method = 'z-score';
+        p = 1;
     case 2
         validatestring(norm_method, norm_methods);
+        p = 1;
+    case 3
+        if ischar(norm_method)
+            validatestring(norm_method, norm_methods);
+        else
+            display('Setting norm_method to default.')
+        end
+        if ~isnumeric(p)
+            warning(['Input value p=',p,' is invalid. Setting p=1.'])
+            p = 1;
+        end
     otherwise
         error('Wrong number of arguments');
 end
 
-data = importdata(data_file);
+if ischar(data_file)
+    data = importdata(data_file);
+else
+    data = data_file;
+end
 data = integration_filter(data);
 
 if strcmp(norm_method,'z-score')
     normed_data = z_score_norm(data);
-else
-    normed_data = frob_norm(data);
+else % default to quad
+    normed_data = quad_norm(data);
 end
 
 lead_matrix = create_lead(normed_data);
 [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
-    sort_lead(lead_matrix);
+    sort_lead(lead_matrix, p);
 
 end
 
@@ -35,7 +52,7 @@ function [y] = integration_filter(x)
     end
 end
 
-function [normed_Z] = frob_norm(Z)
+function [normed_Z] = quad_norm(Z)
 % Normalize vector(s) Z so that the quadratic variation is equal to 1. See
 % Frobenius norm
 
@@ -88,50 +105,60 @@ function [lead_matrix] = create_lead(normed_Z)
     end;
 end
 
-function [eig_vect, permutation, sorted_lead_matrix, eig_vals]=sort_lead(a, varargin)
-% The first input should be the matrix to be sorted, the second should be
+function [phases, perm, slm, evals]=sort_lead(a, p, varargin)
+% The first input should be the matrix to be sorted, the second is the
+% phase or eigenvector to use (default 1). The third, if given, should be
 % the title of an ROI to be used as a baseline.
 % On July 2 I changed the output so that phases outputs an angle rather
 % than the associated complex number and the lowest phase is always zero.
 % On July 14 I changed the output so that a chosen ROI can be used as a
 % baseline.
 
+% 2/2 testing phases = phases (:,p);
 
-   	 [eig_vect,eig_vals]=eig(a);
-     eig_vals = diag(eig_vals);
-     sorted_ang = sort(mod(angle(eig_vect(:,1)),2*pi));
+
+    [phases,evals]=eig(a);
+     
+     phases = phases(:,2*p-1); % added 2/2 - testing
+     evals = diag(evals);
+%      sorted_ang = sort(mod(angle(phases(:,p)),2*pi)); 2/2
+     sorted_ang = sort(mod(angle(phases),2*pi));
      [~, shift] = max(abs(diff([sorted_ang; sorted_ang(1) + 2*pi])));
-     if shift == numel(eig_vect(:,1))
+     if shift == numel(phases)
          shift = 1; 
      else
          shift = shift + 1;
      end
      shift = sorted_ang(shift);
 %      shift = pi - median(mod(angle(u(:,1).'), 2*pi));
-	 [phases,permutation]=sort(mod(mod(angle(eig_vect(:,1).'), 2*pi) - shift, 2*pi));
+% 	 [phases,perm]=sort(mod(mod(angle(phases(:,p).'), 2*pi) - shift,
+% 	 2*pi)); 2/2
+	 [ph,perm]=sort(mod(mod(angle(phases.'), 2*pi) - shift, 2*pi));
           
 %      Phase adjust
-switch nargin
-    case 3
-        ROIS = varargin{1};
-        baseroi = varargin(2);
-        try
-            angle_adjust = phases(permutation == find(strcmp([ROIS(:,1)], baseroi)));
-        catch ME
-            warning('baseroi not found. Input ignored.')
-            [phases, permutation, sorted_lead_matrix, eig_vals] = sort_lead(a);
-            return
-        end
-    case 2
-        error('Optional arg 1 should be the ROIS; optional arg 2 should be base roi')
-    case 1
-        angle_adjust = min(phases);
-    otherwise
-        error('Too many arguments')
-end
+    switch nargin
+        case 4
+            ROIS = varargin{1};
+            baseroi = varargin(2);
+            try
+                angle_adjust = ph(perm == find(strcmp([ROIS(:,1)], baseroi)));
+            catch ME
+                warning('baseroi not found. Input ignored.')
+                [phases, perm, slm, evals] = sort_lead(a);
+                return
+            end
+        case 3
+            error('Optional arg 1 should be the ROIS; optional arg 2 should be base roi')
+        case 2
+            angle_adjust = min(ph);
+        case 1
+            p = 1;
+        otherwise
+            error('Too many arguments')
+    end
 
 %      phases = phases - ones(size(phases)) .* angle_adjust;
-	 sorted_lead_matrix=a(permutation,permutation);
-     eig_vect = eig_vect(:,1);
+	 slm=a(perm,perm);
+%      phases = phases(:,1); 2/2
 %      eig_vect = eig_vect(permutation,:);
 end

@@ -1,7 +1,10 @@
-% Returns cyclicity results for processed subject data in current
-% directory. Saves results in 'cyclicity.mat'.
-files = dir('processed*');
-for norm_method = {'z-score','frob'}
+function [phases, perms, slm, evals] = analyze_cyclicity(dir_search)
+% Returns cyclicity results for dir_search file in current
+% directory. Saves results in 'cyclicity.mat'. dir_search should be a .mat
+% file containing only time series data stored row wise.
+
+files = dir(dir_search);
+for norm_method = {'z-score','quad'}
 	n = length(files);
 	phases = cell(1,n); perms = cell(1,n); slm = cell(1,n); evals = cell(1,n); 
 	subject = cell(1,n);
