@@ -1,14 +1,18 @@
-function [] = refine_cyclicity_HCP(file_pattern, n)
+function [] = refine_cyclicity_HCP(file_pattern, n, out_dir)
 % Analyzes cyclicity for data_file in current directory 
 % and then reanalyzes using only traces corresponding to n
 % highest phases (in absolute value).
 
+regions_of_interest;    % generates ROIS variable
 if ~exist('n','var')
     n=10;
-%     save_figs_bool=false;
-% elseif ~exist('save_figs_bool','var')
-%     save_figs_bool = false;
+    out_dir = '';
+elseif ~exist('save_figs_bool','var')
+    out_dir = '';
 end
+
+SAVE_PICS = true;
+s = HWSetup(min(n,7));
 
 files = dir(file_pattern);
 subject = cell(length(files),1);
@@ -24,24 +28,27 @@ for file = files'
     group = '1';
     p = 1;
     [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = run_analysis(data, n, p, group);
-%     fileid = set_fileid(root_save_plots, subject, p, n, group);
-%     save_fig(gcf, fileid, s, SAVE_PICS);
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
+    save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 2
     group = '2';
     in_perm = phase_sort(n+1:end);
     [~, out_perm{i,2}, eval_ratio{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
         n, p, group, in_perm);
-%     fileid = set_fileid(root_save_plots, subject, p, n, group);
-%     save_fig(gcf, fileid, s, SAVE_PICS);
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
+    save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 3
     % Use second eigenvector to determine top traces
     group = '1';
     p=3;
     [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, group); 
-%     fileid = set_fileid(root_save_plots, subject, p, n, group);
-%     save_fig(gcf, fileid, s, SAVE_PICS);
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
+    save_fig(gcf, fileid, s, SAVE_PICS);
     
     i = i+1;
 end
@@ -58,7 +65,8 @@ fileid = [root, file_name, '_p',num2str(p),...
     '_n',num2str(n),'_gp', group];
 end
 
-function [phase_sort, out_perm, eval_ratio] = run_analysis(data, n, p, group, in_perm)
+function [phase_sort, out_perm, eval_ratio] = ...
+    run_analysis(data, n, p, group, in_perm)
 % Input:
 %     data = time series data, stored row wise
 %     n = output analysis of traces corresponding to n largest phases 
@@ -76,19 +84,19 @@ if ~exist('in_perm', 'var')
 end
 
 % First analysis to get all phases
-% [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
-[orig_phases, ~, ~, ~] = cyclic_analysis(data, 'quad', p);
+[orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
+% [orig_phases, ~, ~, ~] = cyclic_analysis(data, 'quad', p);
 [~, phase_sort] = sort(abs(orig_phases),'descend');  % sort
 
 % Analyze and make figs for top n
-% [phases, perm, slm, evals] = ...
-[~, perm, ~, evals] = ...
+% [~, perm, ~, evals] = ...
+[phases, perm, slm, evals] = ...
     cyclic_analysis(data(phase_sort(1:n),:),'quad', 1);
 
-% data_lines = data(phase_sort(perm),:);
-% cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
-%     {perm}, {phases}, {slm}, {evals}, 1, ...
-%     in_perm, group, p, header_data.categories);
+data_lines = data(phase_sort(perm),:);
+cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
+    {perm}, {phases}, {slm}, {evals}, 1, ...
+    in_perm, group, p);
 out_perm = in_perm(phase_sort(perm));
 evals = abs(evals);
 if evals(1) < evals(2)
@@ -119,10 +127,12 @@ elseif ~exist('p','var')
     p=1;
 end
 
-categories = cell(length(orig_perm),1);
-for i = (1:length(categories))
-    categories{i} = num2str(i);
-end
+regions_of_interest;
+categories = ROIS(:,1);
+% categories = cell(length(orig_perm),1);
+% for i = (1:length(categories))
+%     categories{i} = num2str(i);
+% end
 
 INTERVAL_SIZE = 20;
 for set_start = (1:INTERVAL_SIZE:length(perms))
@@ -200,13 +210,13 @@ for set_start = (1:INTERVAL_SIZE:length(perms))
     %     fullscreen(h(i));
     end
 
-    folder_name = [group,'_figs'];
-    if ~exist(folder_name,'dir')
-        mkdir(folder_name)
-    end
-
-    file_name = [group, num2str(set_start), '-', num2str(index), '.fig'];
-    savefig(h,[folder_name, '/', file_name])
+%     folder_name = [group,'_figs'];
+%     if ~exist(folder_name,'dir')
+%         mkdir(folder_name)
+%     end
+% 
+%     file_name = [group, num2str(set_start), '-', num2str(index), '.fig'];
+%     savefig(h,[folder_name, '/', file_name])
 end
 end
 
@@ -232,6 +242,8 @@ if ~exist('s', 'var')
 elseif ~exist('save_bool','var')
     save_bool = true;
 end
+
+savefig(h,fileid);
 
 if save_bool
     hgexport(h, fileid, s);
