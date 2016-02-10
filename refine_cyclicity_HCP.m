@@ -13,23 +13,24 @@ end
 files = dir(file_pattern);
 subject = cell(length(files),1);
 out_perm = cell(length(files),3);
+eval_ratio = out_perm;
 
 i = 1;
 for file = files'
     
-    subject{i} = file.name(end-10:end-4);
+    subject{i} = file.name(end-9:end-4);
     data = importdata(file.name);
 
     group = '1';
     p = 1;
-    [phase_sort, out_perm{i,1}] = run_analysis(data, n, p, group);
+    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = run_analysis(data, n, p, group);
 %     fileid = set_fileid(root_save_plots, subject, p, n, group);
 %     save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 2
     group = '2';
     in_perm = phase_sort(n+1:end);
-    [~, out_perm{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
+    [~, out_perm{i,2}, eval_ratio{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
         n, p, group, in_perm);
 %     fileid = set_fileid(root_save_plots, subject, p, n, group);
 %     save_fig(gcf, fileid, s, SAVE_PICS);
@@ -38,13 +39,13 @@ for file = files'
     % Use second eigenvector to determine top traces
     group = '1';
     p=3;
-    [~, out_perm{i,3}] = run_analysis(data, n, p, group); 
+    [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, group); 
 %     fileid = set_fileid(root_save_plots, subject, p, n, group);
 %     save_fig(gcf, fileid, s, SAVE_PICS);
     
     i = i+1;
 end
-save('refine_cyclicity_output','subject','out_perm')
+save('refine_cyclicity_output','subject','out_perm','eval_ratio')
 end
 
 function [fileid] = set_fileid(root, file_name, p, n, group)
@@ -57,7 +58,7 @@ fileid = [root, file_name, '_p',num2str(p),...
     '_n',num2str(n),'_gp', group];
 end
 
-function [phase_sort, out_perm] = run_analysis(data, n, p, group, in_perm)
+function [phase_sort, out_perm, eval_ratio] = run_analysis(data, n, p, group, in_perm)
 % Input:
 %     data = time series data, stored row wise
 %     n = output analysis of traces corresponding to n largest phases 
@@ -70,9 +71,9 @@ function [phase_sort, out_perm] = run_analysis(data, n, p, group, in_perm)
 %         (default = (1:size(data,1)))
 
 
-% if ~exist('in_perm', 'var')
-%     in_perm = (1:size(data,1))';
-% end
+if ~exist('in_perm', 'var')
+    in_perm = (1:size(data,1))';
+end
 
 % First analysis to get all phases
 % [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
@@ -81,14 +82,20 @@ function [phase_sort, out_perm] = run_analysis(data, n, p, group, in_perm)
 
 % Analyze and make figs for top n
 % [phases, perm, slm, evals] = ...
-[~, perm, ~, ~] = ...
+[~, perm, ~, evals] = ...
     cyclic_analysis(data(phase_sort(1:n),:),'quad', 1);
 
 % data_lines = data(phase_sort(perm),:);
 % cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
 %     {perm}, {phases}, {slm}, {evals}, 1, ...
 %     in_perm, group, p, header_data.categories);
-out_perm = phase_sort(perm);
+out_perm = in_perm(phase_sort(perm));
+evals = abs(evals);
+if evals(1) < evals(2)
+	eval_ratio = evals(2)/evals(4);
+else
+	eval_ratio = evals(1)/max(evals(3),evals(4));
+end
 end
 
 function [] = cyclicity_figs(file_name, data_lines, orig_phases, orig_perm,...
