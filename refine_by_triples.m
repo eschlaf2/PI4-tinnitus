@@ -1,4 +1,4 @@
-function [] = refine_cyclicity_HCP(file_pattern, region_names_file, n, out_dir)
+function [] = refine_by_triples(file_pattern, region_names_file, n, out_dir)
 % Analyzes cyclicity for data_file in current directory 
 % and then reanalyzes using only traces corresponding to n
 % highest phases (in absolute value).
@@ -72,7 +72,7 @@ fileid = [root, file_name, '_p',num2str(p),...
     '_n',num2str(n),'_gp', group];
 end
 
-function [phase_sort, out_perm, eval_ratio] = ...
+function [trip_sort, out_perm, eval_ratio] = ...
     run_analysis(data, n, p, group, region_names, in_perm)
 % Input:
 %     data = time series data, stored row wise
@@ -90,26 +90,65 @@ if ~exist('in_perm', 'var')
     in_perm = (1:size(data,1))';
 end
 
-% First analysis to get all phases
+% % First analysis to get all phases
+% [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
+
+% First analysis to get all perms
 [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
-% [orig_phases, ~, ~, ~] = cyclic_analysis(data, 'quad', p);
-[~, phase_sort] = sort(abs(orig_phases),'descend');  % sort
+CYCLE = true;
+orig_trips = maketrips(orig_perm, CYCLE);
+[~, trip_sort] = ...
+    sort(histc(orig_trips(:,4),(1:numel(orig_perm{1}))), 'descend');
+
+% [~, phase_sort] = sort(abs(orig_phases), 'descend');  % sort
 
 % Analyze and make figs for top n
 % [~, perm, ~, evals] = ...
 [phases, perm, slm, evals] = ...
-    cyclic_analysis(data(phase_sort(1:n),:),'quad', 1);
+    cyclic_analysis(data(trip_sort(1:n),:),'quad', 1);
 
-data_lines = data(phase_sort(perm),:);
-cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
+data_lines = data(trip_sort(perm),:);
+cyclicity_figs([], data_lines, orig_phases, orig_perm, trip_sort(1:n), ...
     {perm}, {phases}, {slm}, {evals}, 1, ...
     region_names, in_perm, group, p);
-out_perm = in_perm(phase_sort(perm));
+out_perm = in_perm(trip_sort(perm));
 evals = abs(evals);
-if evals(1) < evals(2)
-	eval_ratio = evals(2)/evals(4);
-else
-	eval_ratio = evals(1)/max(evals(3),evals(4));
+eval_ratio = evals(2)/evals(4);
+
+end
+
+function [trips] = maketrips(PERMS, CYCLE)
+
+N = length(PERMS{1});
+trips = zeros(N,N,N);
+[a, b, c] = ndgrid(1:N, 1:N, 1:N);
+
+for p = (1:length(PERMS))
+    perm = PERMS{p};
+    
+    for i = (1:N-2)
+        for j = (i+1:N-1)
+            wheel = [perm;circshift(perm,-i,2);circshift(perm,-j,2)];
+            new_trips = wheel(:,1:end-j)';
+            if CYCLE
+                new_trips = cycle_trips(new_trips);
+            end
+            inds = sub2ind(size(trips),...
+                new_trips(:,1), new_trips(:,2), new_trips(:,3));
+            trips(inds) = trips(inds) + 1;
+        end
+    end
+end
+trips = [a(:) b(:) c(:) trips(:)];
+trips = trips(trips(:,4) > 0,:);
+        
+end
+
+function [trips] = cycle_trips(trips)
+[~,min_loc] = min(trips(:,1:3),[],2);
+shift = 1 - min_loc;
+for i = (1:size(trips,1))
+    trips(i,1:3) = circshift(trips(i,1:3),shift(i),2);
 end
 end
 

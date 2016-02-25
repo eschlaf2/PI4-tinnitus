@@ -24,7 +24,7 @@ for file = files.'
     end
     sbj = strsplit(file.name,{'_','.'},'Collapsedelimiters',true);
     subject{i} = sbj{3};
-    [phases{i}, perms{i}, slm{i}, evals{i}] = cyclic_analysis(data_file, norm_method{:});
+    [phases{i}, perms{i}, slm{i}, evals{i}] = cyclic_analysis(data_file, norm_method);
     i = i + 1;
 end
-save(['cyclicity_',norm_method{:},'.mat'], 'phases', 'perms','slm','evals','subject');
+save(['cyclicity_',norm_method,'.mat'], 'phases', 'perms','slm','evals','subject');

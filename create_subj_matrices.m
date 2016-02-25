@@ -3,7 +3,8 @@
 files = dir('*.nii.gz');
 
 for file = files'
-	subject = file.name(1:6)
+	subject = file.name(1:6);
+    fprintf('Subject: %s\n',subject);
 	if exist(['subject_',subject,'.mat'],'file')
 %	if str2num(subject) < 177747
 %		fileID = fopen('converted_subjects.txt','a');
