@@ -1,14 +1,18 @@
-function [] = refine_cyclicity_HCP(file_pattern, n, out_dir)
+function [] = refine_cyclicity_HCP(file_pattern, region_names_file, n, out_dir)
 % Analyzes cyclicity for data_file in current directory 
 % and then reanalyzes using only traces corresponding to n
 % highest phases (in absolute value).
 
-regions_of_interest;    % generates ROIS variable
+% regions_of_interest;    % generates ROIS variable
 if ~exist('n','var')
     n=10;
     out_dir = '';
-elseif ~exist('save_figs_bool','var')
+elseif ~exist('out_dir','var')
     out_dir = '';
+end
+
+if ~strcmp(out_dir, '') && out_dir(end) ~= '/'
+    out_dir = [out_dir,'/'];
 end
 
 SAVE_PICS = true;
@@ -18,6 +22,7 @@ files = dir(file_pattern);
 subject = cell(length(files),1);
 out_perm = cell(length(files),3);
 eval_ratio = out_perm;
+region_names = importdata(region_names_file);
 
 i = 1;
 for file = files'
@@ -27,7 +32,8 @@ for file = files'
 
     group = '1';
     p = 1;
-    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = run_analysis(data, n, p, group);
+    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = ...
+        run_analysis(data, n, p, group, region_names);
     fileid = set_fileid(out_dir, subject{i}, p, n, group);
     fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
@@ -36,7 +42,7 @@ for file = files'
     group = '2';
     in_perm = phase_sort(n+1:end);
     [~, out_perm{i,2}, eval_ratio{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
-        n, p, group, in_perm);
+        n, p, group, region_names, in_perm);
     fileid = set_fileid(out_dir, subject{i}, p, n, group);
     fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
@@ -45,14 +51,15 @@ for file = files'
     % Use second eigenvector to determine top traces
     group = '1';
     p=3;
-    [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, group); 
+    [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, ...
+        group, region_names); 
     fileid = set_fileid(out_dir, subject{i}, p, n, group);
     fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
     
     i = i+1;
 end
-save('refine_cyclicity_output','subject','out_perm','eval_ratio')
+save([out_dir,'refine_cyclicity_output'],'subject','out_perm','eval_ratio')
 end
 
 function [fileid] = set_fileid(root, file_name, p, n, group)
@@ -66,7 +73,7 @@ fileid = [root, file_name, '_p',num2str(p),...
 end
 
 function [phase_sort, out_perm, eval_ratio] = ...
-    run_analysis(data, n, p, group, in_perm)
+    run_analysis(data, n, p, group, region_names, in_perm)
 % Input:
 %     data = time series data, stored row wise
 %     n = output analysis of traces corresponding to n largest phases 
@@ -96,7 +103,7 @@ end
 data_lines = data(phase_sort(perm),:);
 cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
     {perm}, {phases}, {slm}, {evals}, 1, ...
-    in_perm, group, p);
+    region_names, in_perm, group, p);
 out_perm = in_perm(phase_sort(perm));
 evals = abs(evals);
 if evals(1) < evals(2)
@@ -108,7 +115,7 @@ end
 
 function [] = cyclicity_figs(file_name, data_lines, orig_phases, orig_perm,...
     phase_sort, perms, phases, slm, evals, ...
-    subject, region_numbers, group, p)
+    subject, region_names, region_numbers, group, p)
 % creates cyclicity figures for file_name containing variables phases,
 % perms, slm, evals.
 
@@ -127,8 +134,8 @@ elseif ~exist('p','var')
     p=1;
 end
 
-regions_of_interest;
-categories = ROIS(:,1);
+% regions_of_interest;
+% region_names = ROIS(:,1);
 % categories = cell(length(orig_perm),1);
 % for i = (1:length(categories))
 %     categories{i} = num2str(i);
@@ -147,7 +154,7 @@ for set_start = (1:INTERVAL_SIZE:length(perms))
         subplot(1,NO_SUBPLOTS,1);
         plot(data_lines');
         set(gca,'ytick',[]);
-        leg1 = legend(categories(region_numbers(phase_sort(perms{index}))), ...
+        leg1 = legend(region_names(region_numbers(phase_sort(perms{index}))), ...
             'interpreter','none');
         set(leg1, 'position', [.06,.5,.01,.01], 'unit', 'normalized');
         axis('tight')
