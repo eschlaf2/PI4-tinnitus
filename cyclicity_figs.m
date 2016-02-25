@@ -1,24 +1,36 @@
-function [] = cyclicity_figs(file_name, group, p)
+function [] = cyclicity_figs(file_name, varargin)
 % creates cyclicity figures for file_name containing variables phases,
 % perm, slm, evals.
 
-if ischar(file_name)
-    C = load(file_name);
-else
-    error('First input should be the name of a file.')
-end
+% ===== parse input =====
+p = inputParser;
 
-if ~exist('group','var')
-    group = 'quad';
-    p = 1;
-elseif ~exist('p','var')
-    p=1;
+defaultGroupTitle = 'results';
+defaultRowLabels = 0;
+
+addRequired(p, 'file_name', @isstr);
+addParameter(p, 'group_title', defaultGroupTitle);
+addParameter(p, 'row_labels', defaultRowLabels);
+
+parse(p, file_name, varargin{:});
+
+file_name = p.Results.file_name;
+C = load(file_name);
+group_title = p.Results.group_title;
+row_labels = p.Results.row_labels;
+if isnumeric(row_labels)
+    row_labels = cell(numel(C.perms{1}),1);
+    for i = (1:numel(row_labels))
+        row_labels{i} = num2str(i);
+    end
+%     row_labels = row_labels
 end
+% ===== end parse =====
 
 INTERVAL_SIZE = 20;
 for set_start = (1:INTERVAL_SIZE:length(C.perms))
     set_size = min(INTERVAL_SIZE, length(C.perms) - set_start + 1);
-%     close all;
+    close all;
     h=zeros(1,set_size);
     for i=1:set_size
         index = set_start + i - 1;
@@ -34,30 +46,37 @@ for set_start = (1:INTERVAL_SIZE:length(C.perms))
         hold off;
         subplot(1,3,2)
         stem(abs(C.evals{index}),'b')
-        title([num2str(p),':',num2str(p+1),' = ',...
-            num2str(abs(C.evals{index}(2*p-1)/C.evals{index}(2*p+1)))]);
+        C.evals{index} = abs(C.evals{index});
+        if C.evals{index}(1) < C.evals{index}(2)
+            eval_ratio = C.evals{index}(2)/C.evals{index}(4);
+        else
+            eval_ratio = C.evals{index}(1)/...
+                max(C.evals{index}(3), C.evals{index}(4));
+        end
+        title(['1:2 = ', num2str(eval_ratio)]);
 %         title(['first:second =
 %         ',num2str(abs(evals{index}(1)/evals{index}(3)))]); 2/2
         axis('square')
         subplot(1,3,3)
         imagesc(C.slm{index})
-        title(group,'interpreter','none')
+        title(group_title,'interpreter','none')
         set(gca,'xtick',[],'ytick',[]);
         axis('square')
 %         p = num2str(region_numbers{index}(C.perms{index}));
 %         p = strjoin(num2str(C.perms{index},',');
-        p = strjoin({num2str(C.perms{index}(:)')},',');
+        p = strjoin(strtrim(row_labels(C.perms{index}))','    ');
+%         p = strjoin({num2str(C.perms{index}(:)')},',');
         annotation('textbox',[.05 .05 .9 .05], 'string', p, ...
             'linestyle','none','horizontalalignment','center');
         set(h(i),'units','normalized','position',[0 .5 1 .5]);
     %     fullscreen(h(i));
     end
 
-    folder_name = [group,'_figs'];
+    folder_name = [group_title,'_figs'];
     if ~exist(folder_name,'dir')
         mkdir(folder_name)
     end
 
-    file_name = [group, num2str(set_start), '-', num2str(index), '.fig'];
+    file_name = [group_title, num2str(set_start), '-', num2str(index), '.fig'];
     savefig(h,[folder_name, '/', file_name])
 end

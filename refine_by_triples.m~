@@ -1,57 +1,65 @@
-function [] = refine_cyclicity_HCP(file_pattern, n)
+function [] = refine_by_triples(file_pattern, region_names_file, n, out_dir)
 % Analyzes cyclicity for data_file in current directory 
 % and then reanalyzes using only traces corresponding to n
 % highest phases (in absolute value).
 
-regions_of_interest;    % generates ROIS variable
+% regions_of_interest;    % generates ROIS variable
 if ~exist('n','var')
     n=10;
-    save_figs_bool=true;
-elseif ~exist('save_figs_bool','var')
-    save_figs_bool = true;
+    out_dir = '';
+elseif ~exist('out_dir','var')
+    out_dir = '';
 end
 
-SAVE_PICS = save_figs_bool;
+if ~strcmp(out_dir, '') && out_dir(end) ~= '/'
+    out_dir = [out_dir,'/'];
+end
+
+SAVE_PICS = true;
 s = HWSetup(min(n,7));
 
 files = dir(file_pattern);
 subject = cell(length(files),1);
 out_perm = cell(length(files),3);
 eval_ratio = out_perm;
+region_names = importdata(region_names_file);
 
 i = 1;
 for file = files'
     
     subject{i} = file.name(end-9:end-4);
     data = importdata(file.name);
-    root_save_plots = '';
 
     group = '1';
     p = 1;
-    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = run_analysis(data, n, p, group);
-    fileid = set_fileid(root_save_plots, subject{i}, p, n, group);
-    fprintf('%s\n',fileid);
+    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = ...
+        run_analysis(data, n, p, group, region_names);
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 2
     group = '2';
     in_perm = phase_sort(n+1:end);
     [~, out_perm{i,2}, eval_ratio{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
-        n, p, group, in_perm);
-    fileid = set_fileid(root_save_plots, subject{i}, p, n, group);
+        n, p, group, region_names, in_perm);
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 3
     % Use second eigenvector to determine top traces
     group = '1';
     p=3;
-    [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, group); 
-    fileid = set_fileid(root_save_plots, subject{i}, p, n, group);
+    [~, out_perm{i,3}, eval_ratio{i,3}] = run_analysis(data, n, p, ...
+        group, region_names); 
+    fileid = set_fileid(out_dir, subject{i}, p, n, group);
+    fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
     
     i = i+1;
 end
-save('refine_cyclicity_output','subject','out_perm','eval_ratio')
+save([out_dir,'refine_cyclicity_output'],'subject','out_perm','eval_ratio')
 end
 
 function [fileid] = set_fileid(root, file_name, p, n, group)
@@ -65,7 +73,7 @@ fileid = [root, file_name, '_p',num2str(p),...
 end
 
 function [phase_sort, out_perm, eval_ratio] = ...
-    run_analysis(data, n, p, group, in_perm)
+    run_analysis(data, n, p, group, region_names, in_perm)
 % Input:
 %     data = time series data, stored row wise
 %     n = output analysis of traces corresponding to n largest phases 
@@ -82,21 +90,28 @@ if ~exist('in_perm', 'var')
     in_perm = (1:size(data,1))';
 end
 
-% First analysis to get all phases
-[orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
-% [orig_phases, ~, ~, ~] = cyclic_analysis(data, 'quad', p);
-[~, phase_sort] = sort(abs(orig_phases),'descend');  % sort
+% % First analysis to get all phases
+% [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
+
+% First analysis to get all perms
+[~, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
+CYCLE = true;
+orig_trips = maketrips(orig_perm, CYCLE);
+[~, trip_sort] = ...
+    sort(histc(orig_trips(:,4),(1:numel(orig_perm{1}))), 'descend');
+
+% [~, phase_sort] = sort(abs(orig_phases), 'descend');  % sort
 
 % Analyze and make figs for top n
 % [~, perm, ~, evals] = ...
 [phases, perm, slm, evals] = ...
-    cyclic_analysis(data(phase_sort(1:n),:),'quad', 1);
+    cyclic_analysis(data(trip_sort(1:n),:),'quad', 1);
 
-data_lines = data(phase_sort(perm),:);
-cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...
+data_lines = data(trip_sort(perm),:);
+cyclicity_figs([], data_lines, orig_phases, orig_perm, trip_sort(1:n), ...
     {perm}, {phases}, {slm}, {evals}, 1, ...
-    in_perm, group, p);
-out_perm = in_perm(phase_sort(perm));
+    region_names, in_perm, group, p);
+out_perm = in_perm(trip_sort(perm));
 evals = abs(evals);
 if evals(1) < evals(2)
 	eval_ratio = evals(2)/evals(4);
@@ -105,9 +120,44 @@ else
 end
 end
 
+function [trips] = maketrips(PERMS, CYCLE)
+
+N = length(PERMS{1});
+trips = zeros(N,N,N);
+[a, b, c] = ndgrid(1:N, 1:N, 1:N);
+
+for p = (1:length(PERMS))
+    perm = PERMS{p};
+    
+    for i = (1:N-2)
+        for j = (i+1:N-1)
+            wheel = [perm;circshift(perm,-i,2);circshift(perm,-j,2)];
+            new_trips = wheel(:,1:end-j)';
+            if CYCLE
+                new_trips = cycle_trips(new_trips);
+            end
+            inds = sub2ind(size(trips),...
+                new_trips(:,1), new_trips(:,2), new_trips(:,3));
+            trips(inds) = trips(inds) + 1;
+        end
+    end
+end
+trips = [a(:) b(:) c(:) trips(:)];
+trips = trips(trips(:,4) > 0,:);
+        
+end
+
+function [trips] = cycle_trips(trips)
+[~,min_loc] = min(trips(:,1:3),[],2);
+shift = 1 - min_loc;
+for i = (1:size(trips,1))
+    trips(i,1:3) = circshift(trips(i,1:3),shift(i),2);
+end
+end
+
 function [] = cyclicity_figs(file_name, data_lines, orig_phases, orig_perm,...
     phase_sort, perms, phases, slm, evals, ...
-    subject, region_numbers, group, p)
+    subject, region_names, region_numbers, group, p)
 % creates cyclicity figures for file_name containing variables phases,
 % perms, slm, evals.
 
@@ -126,8 +176,8 @@ elseif ~exist('p','var')
     p=1;
 end
 
-regions_of_interest;
-categories = ROIS(:,1);
+% regions_of_interest;
+% region_names = ROIS(:,1);
 % categories = cell(length(orig_perm),1);
 % for i = (1:length(categories))
 %     categories{i} = num2str(i);
@@ -146,7 +196,7 @@ for set_start = (1:INTERVAL_SIZE:length(perms))
         subplot(1,NO_SUBPLOTS,1);
         plot(data_lines');
         set(gca,'ytick',[]);
-        leg1 = legend(categories(region_numbers(phase_sort(perms{index}))), ...
+        leg1 = legend(region_names(region_numbers(phase_sort(perms{index}))), ...
             'interpreter','none');
         set(leg1, 'position', [.06,.5,.01,.01], 'unit', 'normalized');
         axis('tight')
@@ -209,13 +259,13 @@ for set_start = (1:INTERVAL_SIZE:length(perms))
     %     fullscreen(h(i));
     end
 
-    folder_name = [group,'_figs'];
-    if ~exist(folder_name,'dir')
-        mkdir(folder_name)
-    end
-
-    file_name = [group, num2str(set_start), '-', num2str(index), '.fig'];
-    savefig(h,[folder_name, '/', file_name])
+%     folder_name = [group,'_figs'];
+%     if ~exist(folder_name,'dir')
+%         mkdir(folder_name)
+%     end
+% 
+%     file_name = [group, num2str(set_start), '-', num2str(index), '.fig'];
+%     savefig(h,[folder_name, '/', file_name])
 end
 end
 
@@ -241,6 +291,8 @@ if ~exist('s', 'var')
 elseif ~exist('save_bool','var')
     save_bool = true;
 end
+
+savefig(h,fileid);
 
 if save_bool
     hgexport(h, fileid, s);

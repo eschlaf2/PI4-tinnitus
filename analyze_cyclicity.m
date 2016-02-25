@@ -23,10 +23,14 @@ for file = files.'
         data_file = data_file(lines,:);
     end
     sbj = strsplit(file.name,{'_','.'},'Collapsedelimiters',true);
+<<<<<<< HEAD
     subject{i} = sbj{4};
     fprintf('%s\n',subject{i});
     [phases{i}, perms{i}, slm{i}, evals{i}] = cyclic_analysis(data_file, norm_method);
     i = i + 1;
 end
 save(['cyclicity_',norm_method,'.mat'], 'phases', 'perms','slm','evals','subject');
+<<<<<<< HEAD
 fprintf('Done\n');
+=======
+>>>>>>> 29f96c744ec52aa182b0f77ccde97a4a44f3677f
