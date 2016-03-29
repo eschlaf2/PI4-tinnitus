@@ -4,10 +4,10 @@ function [] = make_triples()
 % variables. This script will produce a file in the current directory
 % called 'triples.txt'.
 
-files = dir('cyclicity_quad.mat');
-regions = importdata('regions.mat'); 
-% regions = importdata('top10_p2.mat');
-% regions = regions(:,2);
+files = dir('cyclicity_top10_p1.mat');
+% regions = importdata('region_names.mat'); 
+regions = importdata('top10_p1.mat');
+regions = regions(:,2);
 % regions = regions.region_names;
 
 % files = [files;dir('NH*cyclicity.mat');dir('TIN*cyclicity.mat')];

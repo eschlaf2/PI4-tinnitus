@@ -47,12 +47,8 @@ for set_start = (1:INTERVAL_SIZE:length(C.perms))
         subplot(1,3,2)
         stem(abs(C.evals{index}),'b')
         C.evals{index} = abs(C.evals{index});
-        if C.evals{index}(1) < C.evals{index}(2)
-            eval_ratio = C.evals{index}(2)/C.evals{index}(4);
-        else
-            eval_ratio = C.evals{index}(1)/...
-                max(C.evals{index}(3), C.evals{index}(4));
-        end
+        eval_ratio = C.evals{index}(2)/C.evals{index}(4);
+        
         title(['1:2 = ', num2str(eval_ratio)]);
 %         title(['first:second =
 %         ',num2str(abs(evals{index}(1)/evals{index}(3)))]); 2/2

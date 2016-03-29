@@ -1,4 +1,5 @@
-function [eig_vec, phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
+function [eig_vec, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
+% [eig_vec, phases, permutation, sorted_lead_matrix, spectrum]=sort_lead(a, varargin)
 % sorts the given lead matrix. Takes optional arguments: 1) a list of ROIS
 % if different from existing 'ROIS' variable (used when we looked at
 % average of left and right regions); 2) base roi - a region to be used as
@@ -26,7 +27,8 @@ switch nargin
             angle_adjust = phases(permutation == find(strcmp([ROIS(:,1)], baseroi)));
         catch ME
             warning('baseroi not found. Input ignored.')
-            [eig_vec, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
+%             [eig_vec, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
+            [phases, permutation, sorted_lead_matrix, spectrum] = sort_lead(a);
             return
         end
     case 2

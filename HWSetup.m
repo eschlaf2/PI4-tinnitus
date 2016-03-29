@@ -10,7 +10,7 @@ set(0,'DefaultAxesColorOrder',ColorSet);
 set(0,'defaultAxesLineStyleOrder','-|--|:')
 
 s = hgexport('readstyle','PowerPoint'); %'PowerPoint' for presentations
-s.Format = 'eps';
+s.Format = 'png';
 s.FontSizeMin = '18';
 
 

@@ -91,14 +91,14 @@ if ~exist('in_perm', 'var')
 end
 
 % First analysis to get all phases
-[orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
+[orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, p);
 % [orig_phases, ~, ~, ~] = cyclic_analysis(data, 'quad', p);
 [~, phase_sort] = sort(abs(orig_phases),'descend');  % sort
 
 % Analyze and make figs for top n
 % [~, perm, ~, evals] = ...
 [phases, perm, slm, evals] = ...
-    cyclic_analysis(data(phase_sort(1:n),:),'quad', 1);
+    cyclic_analysis(data(phase_sort(1:n),:), 1);
 
 data_lines = data(phase_sort(perm),:);
 cyclicity_figs([], data_lines, orig_phases, orig_perm, phase_sort(1:n), ...

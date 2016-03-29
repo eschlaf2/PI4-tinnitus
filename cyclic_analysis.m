@@ -1,42 +1,70 @@
 function [eig_phases, eig_perm, sorted_lead_matrix, eig_vals] = ...
     cyclic_analysis(data_file, norm_method, p)
 % Performs cyclic analysis on data_file using normalization norm_method,
-% one of 'z-score' or 'quad' (default 'quad') on eigenvector p (default
-% 1).
+% one of 'z-score' or 'quad' (default 'quad'), on eigenvector p (default
+% 1). 
 
-% parse input
-norm_methods = {'z-score', 'quad'};
+% ************************************************************************
+% Begin input parser
+% ************************************************************************
+P = inputParser;
+
+defaultNorm_method = 'quad';
+expectedNorms = {'quad','z-score'};
+
+addRequired(P,'data_file');
+addOptional(P,'norm_method',defaultNorm_method,...
+    @(x) any(validatestring(x,expectedNorms)));
+addOptional(P,'p',1);
+
 switch nargin
     case 1
-        p = 1;
+        parse(P,data_file);
     case 2
-        validatestring(norm_method, norm_methods);
-        p = 1;
-    case 3
-        if ischar(norm_method)
-            validatestring(norm_method, norm_methods);
-        else
-            display('Setting norm_method to default.')
-        end
-        if ~isnumeric(p)
-            warning(['Input value p=',p,' is invalid. Setting p=1.'])
-            p = 1;
-        end
+        parse(P,data_file,norm_method);
     otherwise
-        error('Wrong number of arguments');
+        parse(P,data_file,norm_method,p);
 end
+
+data_file = P.Results.data_file;
+p = P.Results.p;
+norm_method = P.Results.norm_method;
+% ************************************************************************
+
+% parse input
+% norm_methods = {'z-score', 'quad'};
+% switch nargin
+%     case 1
+%         p = 1;
+%     case 2
+%         validatestring(norm_method, norm_methods);
+%         p = 1;
+%     case 3
+%         if ischar(norm_method)
+%             validatestring(norm_method, norm_methods);
+%         else
+%             display('Setting norm_method to default.')
+%         end
+%         if ~isnumeric(p)
+%             warning(['Input value p=',p,' is invalid. Setting p=1.'])
+%             p = 1;
+%         end
+%     otherwise
+%         error('Wrong number of arguments');
+% end
 
 if ischar(data_file)
     data = importdata(data_file);
 else
     data = data_file;
 end
-data = integration_filter(data);
+% data = integration_filter(data);
 
-if strcmp(norm_method,'z-score')
-    normed_data = z_score_norm(data);
-else % default to quad
-    normed_data = quad_norm(data);
+switch norm_method
+    case 'z-score'
+        normed_data = z_score_norm(data);
+    case 'quad'
+        normed_data = quad_norm(data);
 end
 
 lead_matrix = create_lead(normed_data);
@@ -105,7 +133,7 @@ function [lead_matrix] = create_lead(normed_Z)
     end;
 end
 
-function [phases, perm, slm, evals]=sort_lead(a, p, varargin)
+function [phases, perm, slm, evals]=sort_lead(a, varargin)
 % The first input should be the matrix to be sorted, the second is the
 % phase or eigenvector to use (default 1). The third, if given, should be
 % the title of an ROI to be used as a baseline.
@@ -113,9 +141,24 @@ function [phases, perm, slm, evals]=sort_lead(a, p, varargin)
 % than the associated complex number and the lowest phase is always zero.
 % On July 14 I changed the output so that a chosen ROI can be used as a
 % baseline.
+% Note, there is no angle adjustment in this version.
 
 % 2/2 testing phases = phases (:,p);
 
+%% **************************************************************
+% Begin input parser
+% **************************************************************
+P = inputParser;
+defaultP = 1;
+
+addRequired(P,'a',@isnumeric)
+addOptional(P,'p',defaultP)
+
+parse(P,a,varargin{:});
+a = P.Results.a;
+p = P.Results.p;
+% **************************************************************
+%%
 
     [phases,evals]=eig(a);
      
@@ -133,32 +176,32 @@ function [phases, perm, slm, evals]=sort_lead(a, p, varargin)
 %      shift = pi - median(mod(angle(u(:,1).'), 2*pi));
 % 	 [phases,perm]=sort(mod(mod(angle(phases(:,p).'), 2*pi) - shift,
 % 	 2*pi)); 2/2
-	 [ph,perm]=sort(mod(mod(angle(phases.'), 2*pi) - shift, 2*pi));
-          
+	 [~,perm]=sort(mod(mod(angle(phases.'), 2*pi) - shift, 2*pi));
+     slm=a(perm,perm);
+ 
 %      Phase adjust
-    switch nargin
-        case 4
-            ROIS = varargin{1};
-            baseroi = varargin(2);
-            try
-                angle_adjust = ph(perm == find(strcmp([ROIS(:,1)], baseroi)));
-            catch ME
-                warning('baseroi not found. Input ignored.')
-                [phases, perm, slm, evals] = sort_lead(a);
-                return
-            end
-        case 3
-            error('Optional arg 1 should be the ROIS; optional arg 2 should be base roi')
-        case 2
-            angle_adjust = min(ph);
-        case 1
-            p = 1;
-        otherwise
-            error('Too many arguments')
-    end
+%     switch nargin
+%         case 4
+%             ROIS = varargin{1};
+%             baseroi = varargin(2);
+%             try
+%                 angle_adjust = ph(perm == find(strcmp([ROIS(:,1)], baseroi)));
+%             catch ME
+%                 warning('baseroi not found. Input ignored.')
+%                 [phases, perm, slm, evals] = sort_lead(a);
+%                 return
+%             end
+%         case 3
+%             error('Optional arg 1 should be the ROIS; optional arg 2 should be base roi')
+%         case 2
+%             angle_adjust = min(ph);
+%         case 1
+%             p = 1;
+%         otherwise
+%             error('Too many arguments')
+%     end
 
 %      phases = phases - ones(size(phases)) .* angle_adjust;
-	 slm=a(perm,perm);
 %      phases = phases(:,1); 2/2
 %      eig_vect = eig_vect(permutation,:);
 end

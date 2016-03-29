@@ -10,7 +10,8 @@ files = dir(search_pattern);
 for file = files'
     if ~exist('regions','var')
 	try
-	    load('/home/eschlaf2/PI4/rois-FIND/regions.mat');
+% 	    load('/home/eschlaf2/PI4/rois-FIND/regions.mat');
+        load('../FIND_regions.mat');
 	catch ME
 	    error('Could not load regions.')
 	end

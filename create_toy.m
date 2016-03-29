@@ -2,7 +2,7 @@ function [toy_data, ss] = create_toy(data_type, varargin)
 % Makes sample data. Choose what type of function to look at from
 % 'sines', 'gaussian', 'data'. Default 'sines'. Optional arguments:
 %     rois:       number of time series. default = 9
-%     loops:      number of periods for 'sines' type. default = 9
+%     loops:      number of periods for 'sines' type. default = 5
 %     time:       number of time points. default = 100
 %     noisemag:   standard deviation of noise with respect to standard 
 %                 deviation of signal.signal to noise ratio 

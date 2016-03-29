@@ -3,6 +3,8 @@ function [] = refine_by_triples(file_pattern, region_names_file, n, out_dir)
 % and then reanalyzes using only traces corresponding to n
 % highest phases (in absolute value).
 
+SAVE_PICS = false;
+
 % regions_of_interest;    % generates ROIS variable
 if ~exist('n','var')
     n=10;
@@ -15,7 +17,6 @@ if ~strcmp(out_dir, '') && out_dir(end) ~= '/'
     out_dir = [out_dir,'/'];
 end
 
-SAVE_PICS = true;
 s = HWSetup(min(n,7));
 
 files = dir(file_pattern);
@@ -23,6 +24,35 @@ subject = cell(length(files),1);
 out_perm = cell(length(files),3);
 eval_ratio = out_perm;
 region_names = importdata(region_names_file);
+
+[~, perms, ~, ~] = ...
+    analyze_cyclicity(file_pattern);
+CYCLE = true;
+trips = maketrips(perms, CYCLE);
+[~,trip_sort1] = sort(histc(reshape(trips(:,1:3),[],1),...
+    (1:length(perms{1}))),'descend');
+
+[phases, perms1, slm, evals] = ...
+    analyze_cyclicity(file_pattern, trip_sort1(1:n));
+outp1 = cell(size(perms1));
+for i = (1:size(perms1,2))
+    outp1{i} = trip_sort1(perms1{i});
+end
+
+ts = trip_sort1(n+1:end);
+[~, perms, ~, ~] = ...
+    analyze_cyclicity(file_pattern, ts);
+CYCLE = true;
+trips = maketrips(perms, CYCLE);
+[~,trip_sort2] = sort(histc(reshape(trips(:,1:3),[],1),...
+    (1:length(perms{1}))),'descend');
+
+[phases, perms2, slm, evals] = ...
+    analyze_cyclicity(file_pattern, ts(trip_sort2(1:n)));
+outp2 = cell(size(perms2));
+for i = (1:size(perms2,2))
+    outp2{i} = ts(perms2{i});
+end
 
 i = 1;
 for file = files'
@@ -32,16 +62,16 @@ for file = files'
 
     group = '1';
     p = 1;
-    [phase_sort, out_perm{i,1}, eval_ratio{i,1}] = ...
+    [~, out_perm{i,1}, eval_ratio{i,1}] = ...
         run_analysis(data, n, p, group, region_names);
     fileid = set_fileid(out_dir, subject{i}, p, n, group);
-    fprintf('Generating file %s\n',fileid);
     save_fig(gcf, fileid, s, SAVE_PICS);
 
     % group 2
     group = '2';
-    in_perm = phase_sort(n+1:end);
-    [~, out_perm{i,2}, eval_ratio{i,2}] = run_analysis(data(phase_sort(n+1:end),:), ...
+    in_perm = trip_sort(n+1:end);
+    [~, out_perm{i,2}, eval_ratio{i,2}] = ...
+        run_analysis(data(trip_sort(n+1:end),:), ...
         n, p, group, region_names, in_perm);
     fileid = set_fileid(out_dir, subject{i}, p, n, group);
     fprintf('Generating file %s\n',fileid);
@@ -96,9 +126,10 @@ end
 % First analysis to get all perms
 [orig_phases, orig_perm, ~, ~] = cyclic_analysis(data, 'quad', p);
 CYCLE = true;
-orig_trips = maketrips(orig_perm, CYCLE);
+orig_trips = maketrips({orig_perm}, CYCLE);
 [~, trip_sort] = ...
-    sort(histc(orig_trips(:,4),(1:numel(orig_perm{1}))), 'descend');
+    sort(histc(orig_trips(:,4),(1:numel(orig_perm))), 'descend');
+
 
 % [~, phase_sort] = sort(abs(orig_phases), 'descend');  % sort
 
@@ -289,6 +320,7 @@ elseif ~exist('save_bool','var')
     save_bool = true;
 end
 
+fprintf('Generating file %s\n',fileid);
 savefig(h,fileid);
 
 if save_bool
